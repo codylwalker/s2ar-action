@@ -1,0 +1,56 @@
+name: "s2ar assert / diff"
+description: "Check a JSON artifact against a schema and terms, or diff two screenshots, and post the signed record's link to the job summary. Evidence an agent can hand on."
+author: "s2ar"
+branding:
+  icon: "check-circle"
+  color: "gray-dark"
+inputs:
+  key:
+    description: "An s2ar API key (secrets.S2AR_API_KEY). Runners share addresses, so the keyless free samples do not apply here; a key from https://api.s2ar.dev/login carries a $1 grant (about 100 asserts)."
+    required: true
+  tool:
+    description: "assert or diff"
+    required: true
+    default: "assert"
+  file:
+    description: "assert: the path of the JSON (or text) artifact to check"
+    required: false
+  schema:
+    description: "assert: the path of a JSON schema the artifact must satisfy"
+    required: false
+  checks:
+    description: "assert: a JSON list of extra checks, e.g. [{\"check\":\"json_valid\"},{\"check\":\"no_terms\",\"terms\":[\"TODO\"]}]"
+    required: false
+    default: "[{\"check\":\"json_valid\"}]"
+  a:
+    description: "diff: the golden screenshot's path"
+    required: false
+  b:
+    description: "diff: today's screenshot's path"
+    required: false
+  fail-on:
+    description: "fail the step when the verdict is one of these (comma-separated): fail, partial, regression"
+    required: false
+    default: "fail,regression"
+outputs:
+  verdict:
+    description: "pass | partial | fail (assert) or same | regression (diff)"
+    value: ${{ steps.run.outputs.verdict }}
+  record:
+    description: "the record_sha256; verify free at https://api.s2ar.dev/v1/verify/<sha>"
+    value: ${{ steps.run.outputs.record }}
+runs:
+  using: "composite"
+  steps:
+    - id: run
+      shell: bash
+      env:
+        S2AR_API_KEY: ${{ inputs.key }}
+        TOOL: ${{ inputs.tool }}
+        FILE: ${{ inputs.file }}
+        SCHEMA: ${{ inputs.schema }}
+        CHECKS: ${{ inputs.checks }}
+        A: ${{ inputs.a }}
+        B: ${{ inputs.b }}
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: bash "${{ github.action_path }}/run.sh"
